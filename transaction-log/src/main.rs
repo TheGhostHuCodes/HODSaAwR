@@ -1,12 +1,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-type SingleLink = Option<Rc<RefCell<Node>>>;
+type Link = Option<Rc<RefCell<Node>>>;
 
 #[derive(Debug, Clone)]
 struct Node {
     value: String,
-    next: SingleLink,
+    next: Link,
 }
 
 impl Node {
@@ -17,8 +17,8 @@ impl Node {
 
 #[derive(Debug)]
 struct TransactionLog {
-    head: SingleLink,
-    tail: SingleLink,
+    head: Link,
+    tail: Link,
     pub length: usize,
 }
 
@@ -78,7 +78,45 @@ impl TransactionLog {
     }
 }
 
+pub struct ListIterator {
+    // Saves a reference to the current node.
+    current_link: Link,
+}
+
+impl ListIterator {
+    fn new(start_at: Link) -> ListIterator {
+        ListIterator {
+            current_link: start_at,
+        }
+    }
+}
+
+impl Iterator for ListIterator {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let current_link = &self.current_link;
+        let mut result = None;
+        self.current_link = match current_link {
+            // There is a current node.
+            Some(current) => {
+                let current_node = current.borrow();
+                // Grab the current node value and return it as the result.
+                result = Some(current_node.value.clone());
+                // Update the `ListIterator.current_link` field with the next
+                // node in the list.
+                current_node.next.clone()
+            }
+            // There is no current node. We're done iterating.
+            None => None,
+        };
+
+        result
+    }
+}
+
 fn main() {
+    // Probably time to convert these over into tests.
     let mut tl = TransactionLog::new();
     dbg!(&tl);
 
@@ -86,6 +124,10 @@ fn main() {
     tl.append("Log Item 2".to_string());
     tl.append("Log Item 3".to_string());
     dbg!(&tl);
+
+    for i in ListIterator::new(tl.head.clone()) {
+        dbg!(i);
+    }
 
     dbg!(&tl.pop());
     dbg!(&tl.pop());
