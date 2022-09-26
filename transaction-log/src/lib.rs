@@ -4,7 +4,7 @@ use std::rc::Rc;
 type Link = Option<Rc<RefCell<Node>>>;
 
 #[derive(Debug, Clone)]
-struct Node {
+pub struct Node {
     value: String,
     next: Link,
 }
@@ -16,7 +16,7 @@ impl Node {
 }
 
 #[derive(Debug)]
-struct TransactionLog {
+pub struct TransactionLog {
     head: Link,
     tail: Link,
     pub length: usize,
@@ -84,7 +84,7 @@ pub struct ListIterator {
 }
 
 impl ListIterator {
-    fn new(start_at: Link) -> ListIterator {
+    pub fn new(start_at: Link) -> ListIterator {
         ListIterator {
             current_link: start_at,
         }
@@ -115,23 +115,44 @@ impl Iterator for ListIterator {
     }
 }
 
-fn main() {
-    // Probably time to convert these over into tests.
-    let mut tl = TransactionLog::new();
-    dbg!(&tl);
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    tl.append("Log Item 1".to_string());
-    tl.append("Log Item 2".to_string());
-    tl.append("Log Item 3".to_string());
-    dbg!(&tl);
+    #[test]
+    fn new_transaction_log_can_be_created() {
+        let tl = TransactionLog::new();
 
-    for i in ListIterator::new(tl.head.clone()) {
-        dbg!(i);
+        assert_eq!(tl.length, 0);
     }
 
-    dbg!(&tl.pop());
-    dbg!(&tl.pop());
-    dbg!(&tl.pop());
-    dbg!(&tl.pop());
-    dbg!(&tl);
+    #[test]
+    fn items_can_be_appended_and_popped_from_transaction_log() {
+        let mut tl = TransactionLog::new();
+        tl.append("Log Item 1".to_string());
+        tl.append("Log Item 2".to_string());
+        tl.append("Log Item 3".to_string());
+
+        assert_eq!(tl.length, 3);
+        assert_eq!(tl.pop(), Some("Log Item 1".to_string()));
+        assert_eq!(tl.pop(), Some("Log Item 2".to_string()));
+        assert_eq!(tl.pop(), Some("Log Item 3".to_string()));
+        assert_eq!(tl.pop(), None);
+    }
+
+    #[test]
+    fn transaction_log_can_be_forward_iterated() {
+        let mut tl = TransactionLog::new();
+        tl.append("Log Item 1".to_string());
+        tl.append("Log Item 2".to_string());
+        tl.append("Log Item 3".to_string());
+
+        for t in ListIterator::new(tl.head.clone()).zip([
+            "Log Item 1".to_string(),
+            "Log Item 2".to_string(),
+            "Log Item 3".to_string(),
+        ]) {
+            assert_eq!(t.0, t.1)
+        }
+    }
 }
